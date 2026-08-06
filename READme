@@ -1,0 +1,52 @@
+# Freight Rate Prediction — ML Engineer Assessment
+
+Predicts freight load rates (`posted_rate`) from load features (pickup/delivery location,
+distance, equipment type, weight, market signals, and date) using a LightGBM regression model.
+
+## Contents
+
+- `freight_rate_model.ipynb` — full pipeline: data loading, cleaning, feature engineering,
+  chronological train/validation split, model training, and generation of both required
+  prediction files.
+- `score.py` — provided scoring/validation script (unmodified).
+- `validation_predictions.csv` — final predictions for all 12,000 loads in `validation.csv`.
+- `december-chart-inputs.csv` — completed December 2025 predictions for the fixed
+  Lexington → Fort Wayne lane.
+- `report.docx` — written report covering the split approach and the December chart.
+
+## Setup
+
+```bash
+pip install pandas numpy lightgbm scikit-learn matplotlib
+```
+
+## Running
+
+Open `freight_rate_model.ipynb` in Jupyter or Google Colab and run all cells top to bottom.
+It expects the four provided data files (`train-test.csv`, `validation.csv`,
+`validation-predictions-template.csv`, `december-chart-inputs.csv`) in the same working
+directory.
+
+Running the notebook end-to-end reproduces:
+- `validation_predictions.csv`
+- the completed `december-chart-inputs.csv`
+
+To validate both output files and regenerate the December chart:
+
+```bash
+python score.py --predictions validation_predictions.csv --december-predictions december-chart-inputs.csv
+```
+
+This prints validation confirmations and saves `scorer_results/candidate_december.png`.
+
+## Approach summary
+
+- **Data cleaning**: fixed sign-flipped negative weight values (abs), imputed missing
+  `weight`/`market_index` with train-set medians plus missingness indicator flags.
+- **Split**: chronological, not random — trained on Jan–Aug 2025, held out Sep–Oct 2025 for
+  validation, since the real `validation.csv` set is entirely Nov–Dec 2025 (future relative
+  to training data). This avoids leaking future information into the model evaluation.
+- **Model**: LightGBM regressor, benchmarked against a linear regression baseline.
+- **Results on holdout**: RMSE $634.34 / MAE $123.51 / MAPE 5.57%.
+
+Full detail, including data-quality findings and known limitations, is in `report.docx`.
